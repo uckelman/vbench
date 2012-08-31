@@ -39,6 +39,8 @@ class BenchmarkDB(object):
             Column('line_profile', sqltypes.Text),
             Column('memory', sqltypes.Float),
             Column('traceback', sqltypes.Text),
+            Column('series_name', sqltypes.Text),
+            Column('series_value', sqltypes.Float)
         )
 
         self._blacklist = Table('blacklist', self._metadata,
@@ -183,6 +185,19 @@ class BenchmarkDB(object):
         df = _sqa_to_frame(results).set_index('timestamp')
         return df.sort_index()
 
+    def get_series(self, checksum, series_name):
+        tab = self._results
+        stmt = sql.select(
+          [tab.c.timestamp, tab.c.revision, tab.c.series_value],
+          sql.and_(
+            tab.c.checksum == checksum,
+            tab.c.series_name == series_name
+          )
+        )
+        results = self.conn.execute(stmt)
+
+        df = _sqa_to_frame(results).set_index('timestamp')
+        return df.sort_index()
 
 def _sqa_to_frame(result):
     rows = [tuple(x) for x in result]
